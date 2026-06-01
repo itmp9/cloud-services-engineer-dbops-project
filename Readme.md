@@ -79,3 +79,17 @@ DB_PASSWORD=dbops_password
 
 - `idx_orders_status_date_created` для фильтрации заказов по статусу и дате;
 - `idx_order_product_order_id` для соединения заказов с товарами в заказах.
+
+## Запрос по продажам за предыдущую неделю
+
+Количество проданных сосисок по дням за предыдущую неделю:
+
+```sql
+SELECT o.date_created, SUM(op.quantity) AS total_quantity
+FROM orders AS o
+JOIN order_product AS op ON o.id = op.order_id
+WHERE o.status = 'shipped'
+  AND o.date_created > now() - interval '7 days'
+GROUP BY o.date_created
+ORDER BY o.date_created;
+```
