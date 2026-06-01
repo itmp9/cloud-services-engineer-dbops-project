@@ -93,3 +93,55 @@ WHERE o.status = 'shipped'
 GROUP BY o.date_created
 ORDER BY o.date_created;
 ```
+
+## Сравнение производительности
+
+До создания индексов запрос выполнялся примерно 6 секунд:
+
+```text
+Time: 5826.138 ms
+```
+
+После добавления индексов:
+
+```sql
+\timing
+
+SELECT o.date_created, SUM(op.quantity) AS total_quantity
+FROM orders AS o
+JOIN order_product AS op ON o.id = op.order_id
+WHERE o.status = 'shipped'
+  AND o.date_created > now() - interval '7 days'
+GROUP BY o.date_created
+ORDER BY o.date_created;
+```
+
+Результат выполнения:
+
+```text
+ date_created | total_quantity
+--------------+----------------
+ 2026-05-26   |         950650
+ 2026-05-27   |         944520
+ 2026-05-28   |         938622
+ 2026-05-29   |         958025
+ 2026-05-30   |         939832
+ 2026-05-31   |         943742
+ 2026-06-01   |         467641
+(7 rows)
+
+Time: 5602.802 ms
+```
+
+План запроса после создания индексов показывает использование индекса `idx_orders_status_date_created`:
+
+```sql
+EXPLAIN ANALYZE
+SELECT o.date_created, SUM(op.quantity) AS total_quantity
+FROM orders AS o
+JOIN order_product AS op ON o.id = op.order_id
+WHERE o.status = 'shipped'
+  AND o.date_created > now() - interval '7 days'
+GROUP BY o.date_created
+ORDER BY o.date_created;
+```
